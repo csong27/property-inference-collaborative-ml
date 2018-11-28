@@ -1,0 +1,5 @@
+data/
+grads/
+.idea/
+*.pyc
+*.npz
