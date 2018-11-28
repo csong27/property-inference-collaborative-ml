@@ -296,7 +296,7 @@ def gradient_getter_with_gen_multi(data_gen1, data_gen2, p_g, fn, iters=10, n_wo
         p_g.append(pgs)
 
 
-def collect_grads(grads_dict, param_names, avg_pool=False):
+def collect_grads(grads_dict, param_names, avg_pool=False, pool_thresh=5000):
     g = []
     for param_name in param_names:
         grad = grads_dict[param_name]
@@ -308,11 +308,11 @@ def collect_grads(grads_dict, param_names, avg_pool=False):
 
         grad = np.abs(grad)
         if len(shape) == 4:
-            if shape[0] * shape[1] > 5000:
+            if shape[0] * shape[1] > pool_thresh:
                 continue
             grad = grad.reshape(shape[0], shape[1], -1)
 
-        if len(shape) > 2 or shape[0] * shape[1] > 5000:
+        if len(shape) > 2 or shape[0] * shape[1] > pool_thresh:
             if avg_pool:
                 grad = np.mean(grad, -1)
             else:
@@ -339,11 +339,11 @@ def aggregate_dicts(dicts, param_names):
 
 def train_multi_task_ps(data, num_iteration=6000, train_size=0.3, victim_id=0, seed=12345, warm_up_iters=100,
                         input_shape=(None, 3, 50, 50), n_workers=2, lr=0.01, attacker_id=1, filename="data",
-                        p_prop=0.5, alpha_B=0., victim_all_nonprop=True, balance=False, k=5):
+                        p_prop=0.5, alpha_B=0., victim_all_nonprop=True, k=5):
 
     splitted_X, splitted_y, X_test, y_test = prepare_data_biased(data, train_size, n_workers, seed=seed,
                                                                  victim_all_nonprop=victim_all_nonprop,
-                                                                 p_prop=p_prop, balance=balance)
+                                                                 p_prop=p_prop)
     p_test = y_test[:, 1]
     y_test = y_test[:, 0]
 

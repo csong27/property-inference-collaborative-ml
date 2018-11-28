@@ -25,7 +25,7 @@ def add_nonprop(test_prop_indices, nonprop_indices, p_prop=0.7):
     return sampled_non_prop, nonprop_indices
 
 
-def prepare_data_biased(data, train_size=0.5, n_workers=5, p_prop=0.5, shuffle=True, balance=True, seed=None,
+def prepare_data_biased(data, train_size=0.5, n_workers=5, p_prop=0.5, shuffle=True, balance=False, seed=None,
                         victim_all_nonprop=False, test_size=0.3):
     if seed is not None:
         np.random.seed(seed)

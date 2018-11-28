@@ -3,3 +3,4 @@ grads/
 .idea/
 *.pyc
 *.npz
+.gitignore

@@ -9,104 +9,18 @@ import warnings
 import os
 
 
-LFW_DIR = '/home/song/scikit_learn_data/lfw_home/lfw_funneled/'
+DATA_DIR = './data/'
+if not os.path.exists(DATA_DIR):
+    os.mkdir(DATA_DIR)
 
 
-def load_lfw(attr_type='gender', transpose=False):
+LFW_DIR = DATA_DIR + '/lfw_home/lfw_funneled/'
+
+
+def download_lfw_raw():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        data = fetch_lfw_people(color=True)
-
-    images = data.images  # * 255
-    names = [data.target_names[i] for i in data.target]
-    name_attr = load_attribute(attr_type)
-    labels = []
-    indices = []
-    for i in xrange(len(names)):
-        name = names[i]
-        if name in name_attr:
-            labels.append(name_attr[name])
-            indices.append(i)
-
-    X = images[indices].astype(np.float32)
-    if transpose:
-        X = X.transpose(0, 3, 1, 2)
-    y = np.asarray(labels, dtype=np.int32)
-    train_x, test_x, train_y, test_y = train_test_split(X, y, stratify=y, test_size=0.25, random_state=42)
-    return train_x, train_y, test_x, test_y
-
-
-def load_lfw_raw(transpose=False):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        data = fetch_lfw_people(color=True)
-
-    images = data.images
-    names = [data.target_names[i] for i in data.target]
-
-    X = images.astype(np.int32)
-    if transpose:
-        X = X.transpose(0, 3, 1, 2)
-
-    return X, names
-
-
-def load_attribute(attr_type='gender'):
-    attr = pd.read_csv('lfw_attributes.txt', delimiter='\t')
-    names = np.asarray(attr['person'])
-    if attr_type == 'gender':
-        gender = np.asarray(attr['Male'])
-        gender = np.sign(gender)
-        gender[gender == -1] = 0
-        name_to_gender = dict(zip(names, gender))
-        return name_to_gender
-    elif attr_type == 'race':
-        race = np.asarray(attr[['Asian', 'White', 'Black']])
-        name_to_race = dict()
-        for i, name in enumerate(names):
-            if name not in name_to_race:
-                name_to_race[name] = (np.max(race[i]), np.argmax(race[i]))
-            else:
-                max_score = np.max(race[i])
-                if max_score > name_to_race[name][0]:
-                    if name_to_race[name][1] != np.argmax(race[i]):
-                        continue
-                    name_to_race[name] = (np.max(race[i]), np.argmax(race[i]))
-
-        for name in name_to_race:
-            name_to_race[name] = name_to_race[name][1]
-
-        return name_to_race
-    elif attr_type == 'glasses':
-        race = np.asarray(attr[['Eyeglasses', 'Sunglasses', 'No Eyewear']])
-        name_to_race = dict()
-        for i, name in enumerate(names):
-            if name not in name_to_race:
-                name_to_race[name] = (np.max(race[i]), np.argmax(race[i]))
-            else:
-                max_score = np.max(race[i])
-                if max_score > name_to_race[name][0]:
-                    if name_to_race[name][1] != np.argmax(race[i]):
-                        continue
-                    name_to_race[name] = (np.max(race[i]), np.argmax(race[i]))
-
-        for name in name_to_race:
-            name_to_race[name] = name_to_race[name][1]
-
-        return name_to_race
-    elif attr_type == 'age':
-        age = np.asarray(attr[['Baby', 'Child', 'Youth', 'Middle Aged', 'Senior']])
-        age = np.argmax(age, 1)
-        name_to_age = dict(zip(names, age))
-        return name_to_age
-    elif attr_type == 'smile':
-        smile = np.asarray(attr['Smiling'])
-        smile = np.sign(smile)
-        smile[smile == -1] = 0
-        name_to_smile = dict(zip(names, smile))
-        return name_to_smile
-    else:
-        raise ValueError(attr_type)
+        fetch_lfw_people(color=True, data_home=DATA_DIR)
 
 
 def save_lfw(slice_=(slice(70, 195), slice(78, 172)), resize=0.5):
@@ -135,11 +49,11 @@ def save_lfw(slice_=(slice(70, 195), slice(78, 172)), resize=0.5):
         imgs[i] = img
         i += 1
 
-    np.savez('./data/lfw_images.npz', imgs)
+    np.savez(DATA_DIR + 'lfw_images.npz', imgs)
 
 
 def load_lfw_binary_attr(attr_type='gender'):
-    attr = pd.read_csv('./data/lfw_attributes.txt', delimiter='\t')
+    attr = pd.read_csv(DATA_DIR + 'lfw_attributes.txt', delimiter='\t')
     if attr_type == 'gender':
         gender = np.asarray(attr['Male'])
         gender = np.sign(gender)
@@ -156,7 +70,7 @@ def load_lfw_binary_attr(attr_type='gender'):
 
 
 def load_lfw_multi_attr(attr_type='race', thresh=-0.1):
-    attr = pd.read_csv('./data/lfw_attributes.txt', delimiter='\t')
+    attr = pd.read_csv(DATA_DIR + 'lfw_attributes.txt', delimiter='\t')
 
     if attr_type == 'race':
         attr = np.asarray(attr[MULTI_ATTRS['race']])
@@ -194,7 +108,11 @@ def load_lfw_attr(attr='gender'):
 
 
 def load_lfw_with_attrs(attr1='gender', attr2=None):
-    with np.load('./data/lfw_images.npz') as f:
+    if not os.path.exists(DATA_DIR + 'lfw_images.npz'):
+        download_lfw_raw()
+        save_lfw()
+
+    with np.load(DATA_DIR + 'lfw_images.npz') as f:
         imgs = f['arr_0'].transpose(0, 3, 1, 2)
 
     index_label_1 = load_lfw_attr(attr1)
